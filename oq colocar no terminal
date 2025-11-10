@@ -1,5 +1,0 @@
-//1. INSTALAR AS PARADAS PRIMEIRO:
-//npm install pg
-
-//Para executar coloque no terminal:
-//node verificador_dependencias.js
