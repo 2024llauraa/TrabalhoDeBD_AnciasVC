@@ -5,6 +5,7 @@ const db = require('./conexaobd'); // importa a conexão
 let tabelas = [];
 let colunas = [];
 let argumentos = [];
+let dependenciasEncontradas = [];
 
 //pega as tabelas do bd
 async function pegarTabelas(){
@@ -73,21 +74,46 @@ function gerarArgumentos(colunas){
 
 //Gera a query para o verificador de dependências funcionais
 function gerarQueryVerificador(argL, argR, tabela){
-    const sql = `SELECT *
-    FROM ${tabela}
-    GROUP BY ${argL.join(', ')}
-    HAVING COUNT(DISTINCT ${argR}) > 1;`;
+    const sql = `
+        SELECT ${argL.join(', ')}, COUNT(DISTINCT ${argR}) as qtd
+        FROM ${tabela}
+        GROUP BY ${argL.join(', ')}
+        HAVING COUNT(DISTINCT ${argR}) > 1;
+    `;
     return sql;
 }
 
 //Executa a query do verificador de dependências funcionais
 async function executarQueryVerificador(sql){
-    db.query(sql).then(res => {
+    try {
+        const res = await db.query(sql);
         return res.rows;
-    }).catch(err => {
+    } catch (err) {
         console.error('Erro ao executar query verificador:', err);
         return [];
-    });
+    }
+}
+
+//Verifica se não tem dependências repetidas
+function registrarDependencia(tabela, argL, argR){
+    if(argL.length === 1 && argL[0] === argR) return;
+
+    const inversaExiste = dependenciasEncontradas.some(dep =>
+        dep.tabela === tabela &&
+        JSON.stringify(dep.argL) === JSON.stringify([argR]) &&
+        JSON.stringify(dep.argR) === JSON.stringify(argL)
+    );
+    if (inversaExiste) return;
+
+    const igualExiste = dependenciasEncontradas.some(dep =>
+        dep.tabela === tabela && 
+        JSON.stringify(dep.argL) === JSON.stringify(argL) &&
+        JSON.stringify(dep.argR) === JSON.stringify([argR])
+    );
+    if(igualExiste) return;
+
+    dependenciasEncontradas.push({tabela, argL, argR: [argR]});
+    console.log(`Dependência funcional na tabela ${tabela}: ${argL.join(', ')} -> ${argR}`);
 }
 
 //Verifica as dependências funcionais por tabela
@@ -103,11 +129,12 @@ async function verificarPorTabela() {
             const sqlVerificador = gerarQueryVerificador(arg.argL, arg.argR, tabela);
             const resultado = await executarQueryVerificador(sqlVerificador);
 
-            if (resultado.length > 0) {
-                console.log(`Dependência funcional na tabela ${tabela}: ${arg.argL.join(', ')} -> ${arg.argR}`);
+            if (resultado && resultado.length === 0) {
+                    registrarDependencia(tabela, arg.argL, arg.argR);
             }
         }
     }
+    db.end();
 }
 
 

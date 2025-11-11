@@ -5,9 +5,9 @@ const { Client } = require('pg');
 const client = new Client({
   host: 'localhost',
   port: 5432,
-  database: 'determinantes',
-  user: 'seu user',
-  password: 'sua senha'
+  database: 'bd_trabalho4',
+  user: 'postgres',
+  password: 'postgres123'
 });
 
 // Conectar no banco
@@ -17,3 +17,4 @@ client.connect()
 
 // Executar o teste
 module.exports = client;
+
