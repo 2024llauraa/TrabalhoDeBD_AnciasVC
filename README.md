@@ -11,7 +11,7 @@ npm install pg
 Executar o verificador:
 Após a instalação, rode o comando:
 
-node verificador_dependencias.js
+node veficador_dependencias.js
 
 Visualizar os resultados:
 As dependências funcionais identificadas serão exibidas diretamente no terminal.
